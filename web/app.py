@@ -35,10 +35,11 @@ from flask_login import (
 from flask_bcrypt import Bcrypt # For password hashing
 from flask_migrate import Migrate
 
+from rsa import RSA
 
 # Initialize the Flask app
 app = Flask(__name__, template_folder='templates', static_folder='static')
-
+rsa = RSA()
 # Configurations
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///db.sqlite3'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
@@ -73,6 +74,7 @@ class User(db.Model, UserMixin):
     username = db.Column(db.String(150), unique=True, nullable=False)
     email = db.Column(db.String(150), unique=True, nullable=False)
     password = db.Column(db.String(150), nullable=False)
+    public_key = db.Column(db.String(500), unique=True, nullable=True)
     is_admin = db.Column(db.Boolean, default=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.now())
     last_updated = db.Column(db.DateTime, default=datetime.datetime.now())
@@ -86,12 +88,168 @@ class User(db.Model, UserMixin):
     
     def get_id(self) -> str:
         return self.user_id 
+    
+class EncryptedKeys(db.Model):
+    __tablename__ = 'encrypted_keys'
+
+    id = db.Column(db.Integer, primary_key=True)
+    user1_id = db.Column(db.String(150), nullable=False)
+    user2_id = db.Column(db.String(150), nullable=False)
+    encrypted_key_1 = db.Column(db.String(500), nullable=False)
+    encrypted_key_2 = db.Column(db.String(500), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.now())
+    last_updated = db.Column(db.DateTime, default=datetime.datetime.now())
+
+    def __str__(self) -> str:
+        return f"{self.id} : {self.user1_id} - {self.user2_id}"
 
 
 @app.route('/')
 def index():
     user = current_user
     return render_template('index.html', user=user)
+
+@app.route('/dashboard')
+@login_required
+def dashboard():
+    """
+    Render the dashboard page.
+    This function checks if the user is logged in and renders the 'dashboard.html' template.
+    If the user is not logged in, it redirects to the login page.
+    """
+    user = current_user
+    return render_template('dashboard.html', user=user)
+
+@app.route('/settings') 
+@login_required
+def settings():
+    """
+    Render the settings page.
+    This function checks if the user is logged in and renders the 'settings.html' template.
+    If the user is not logged in, it redirects to the login page.
+    """
+    user = current_user
+    return render_template('settings.html', user=user)
+
+@app.route('/store_public_key', methods=['POST'])
+@login_required
+def store_public_key():
+    data = request.json
+    public_key = json.dumps(data.get('public_key'))  # Save as stringified JSON
+    current_user.public_key = public_key
+    db.session.commit()
+    return jsonify({'message': 'Public key stored successfully.'}), 200
+
+
+@app.route('/request_key', methods=['POST'])
+def request_key():
+    data = request.json
+
+    if not data.get('user2_id'):
+        return jsonify({'error': 'user2_id is required'}), 400
+
+    user1_id = current_user.user_id # user that is requesting
+    user2_id = data.get('user2_id') # user that is being requested
+
+    user1 = User.query.filter_by(user_id=user1_id).first()
+    user2 = User.query.filter_by(user_id=user2_id).first()
+    if not user1 or not user2:
+        return None, "Users not found!"
+    if not user1.public_key:
+        return jsonify({'error': 'User1 public key not found'}), 400
+    if not user2.public_key:
+        return jsonify({'error': 'User2 public key not found'}), 400
+    if user1_id == user2_id:
+        return jsonify({'error': 'You cannot request a key from yourself'}), 400
+    
+    cesar_key = random.randint(1, 26)
+    cesar_key_str = str(cesar_key)
+
+    encrypted_key_1 = rsa.encrypt(cesar_key_str, user1.public_key)
+    encrypted_key_2 = rsa.encrypt(cesar_key_str, user2.public_key)
+
+    if EncryptedKeys.query.filter_by(user1_id=user1_id, user2_id=user2_id).first() or EncryptedKeys.query.filter_by(user1_id=user2_id, user2_id=user1_id).first():
+        if EncryptedKeys.query.filter_by(user1_id=user1_id, user2_id=user2_id).first():
+            key_entry = EncryptedKeys.query.filter_by(user1_id=user1_id, user2_id=user2_id).first()
+            key_entry.user1_id = user1_id
+            key_entry.user2_id = user2_id
+            key_entry.encrypted_key_1 = encrypted_key_1
+            key_entry.encrypted_key_2 = encrypted_key_2
+            key_entry.last_updated = datetime.datetime.now()
+        elif EncryptedKeys.query.filter_by(user1_id=user2_id, user2_id=user1_id).first():
+            key_entry = EncryptedKeys.query.filter_by(user1_id=user2_id, user2_id=user1_id).first()
+            key_entry.user1_id = user2_id
+            key_entry.user2_id = user1_id
+            key_entry.encrypted_key_1 = encrypted_key_2
+            key_entry.encrypted_key_2 = encrypted_key_1
+            key_entry.last_updated = datetime.datetime.now()
+        db.session.commit()
+    else:
+        key_entry = EncryptedKeys(
+            user1_id=user1_id,
+            user2_id=user2_id,
+            encrypted_key_1=encrypted_key_1,
+            encrypted_key_2=encrypted_key_2,
+        )
+        db.session.add(key_entry)
+        db.session.commit()
+
+    response = {
+        'user1_encrypted_key': encrypted_key_1,
+        # 'cesar_plain': cesar_key_str   # delete this line in production
+    }
+
+    return response, 200
+
+@app.route('/api/users')
+def get_users():
+    users = User.query.filter(User.user_id != current_user.user_id).all()
+    return jsonify({'users': [{'username': u.username, 'user_id': u.user_id} for u in users]}), 200
+
+@app.route('/api/generate_key', methods=['POST'])
+@login_required
+def generate_key():
+    rsa = RSA()
+    public_key, private_key = rsa.generate_key_pair()
+    user = current_user
+    user.public_key = str(public_key)
+    db.session.commit()
+    return jsonify({
+        'message': 'Key generated and public key stored',
+        'public_key': str(public_key),
+        'private_key': str(private_key)
+    }), 200
+
+@app.route('/mykeys', methods=['GET', 'POST'])
+@login_required
+def mykeys():
+    """
+    Render the mykeys page.
+    This function checks if the user is logged in and renders the 'mykeys.html' template.
+    If the user is not logged in, it redirects to the login page.
+    """
+    if request.method == 'GET':
+        user = current_user
+        return render_template('mykeys.html', user=user)
+
+    if request.method == 'POST':
+
+        mykeys = EncryptedKeys.query.filter_by(user1_id=current_user.user_id).all() + EncryptedKeys.query.filter_by(user2_id=current_user.user_id).all()
+        keys = []
+        for key in mykeys:
+            if key.user1_id == current_user.user_id:
+                keys.append({
+                    'username': User.query.filter_by(user_id=key.user2_id).first().username,
+                    'encrypted_key': key.encrypted_key_1
+                })
+            else:
+                keys.append({
+                    'username': User.query.filter_by(user_id=key.user1_id).first().username,
+                    'encrypted_key': key.encrypted_key_2
+                })
+
+        return jsonify({'keys': keys}), 200
+    
 
 # Authentication routes
 @app.route('/register', methods=['GET', 'POST'])

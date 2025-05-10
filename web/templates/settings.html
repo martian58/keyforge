@@ -1,0 +1,57 @@
+<!-- templates/settings.html -->
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Settings</title>
+    <link rel="stylesheet" href="../../static/css/output.css">
+
+</head>
+<body class="bg-gray-900 text-white">
+
+    <!-- Navbar -->
+    <nav class="bg-gray-800 shadow-md p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="text-xl font-bold text-white">🔐 KDC Dashboard</div>
+            <div>
+                <span class="text-gray-300 mr-4">Logged in as {{ user.username }}</span>
+                <a href="/logout" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-white">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex min-h-screen">
+        <!-- Sidebar -->
+        <aside class="w-64 bg-gray-800 p-4 space-y-4">
+            <a href="/dashboard" class="block p-2 rounded hover:bg-gray-700">🏠 Dashboard</a>
+            <a href="/mykeys" class="block p-2 rounded hover:bg-gray-700">🔑 My Keys</a>
+            <a href="/chat" class="block p-2 rounded hover:bg-gray-700">💬 Chat</a>
+            <a href="/settings" class="block p-2 rounded hover:bg-gray-700">⚙️ Settings</a>
+            <a href="/logout" class="block p-2 rounded hover:bg-gray-700 text-red-400">🚪 Logout</a>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="flex-1 p-6 space-y-8">
+            <h1 class="text-2xl font-semibold mb-4">🔐 RSA Key Settings</h1>
+
+            <!-- RSA Key Generation -->
+            <div>
+                <button onclick="generateAndSaveKeys()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded">
+                    🛠️ Generate RSA Key Pair
+                </button>
+                <p class="mt-2 text-sm text-gray-400">Private key is stored locally in your browser (localStorage).</p>
+            </div>
+
+            <!-- Theme Toggle -->
+            <div>
+                <h2 class="text-lg font-semibold mb-2">🌓 Theme Settings</h2>
+                <button onclick="toggleTheme()" class="bg-green-600 hover:bg-green-500 px-4 py-2 rounded">
+                    Toggle Dark / Light Mode
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/settings.js') }}"></script>
+</body>
+</html>
