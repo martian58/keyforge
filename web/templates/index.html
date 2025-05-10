@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>KDC Secure Exchange</title>
+  <link rel="stylesheet" href="../../static/css/output.css">
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+  <!-- Header -->
+  <header class="bg-gray-800 shadow-md">
+    <div class="container mx-auto px-6 py-4 flex justify-between items-center">
+      <h1 class="text-xl font-bold tracking-wide">🔐 KDC KeyForge</h1>
+      <nav class="space-x-4">
+        {% if user.is_authenticated %}
+          <a href="/logout" class="hover:underline text-blue-400">Logout</a>
+        {% else %}
+          <a href="/login" class="hover:underline text-blue-400">Login</a>
+        <a href="/register" class="hover:underline text-blue-400">Register</a>
+        {% endif %}
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <main class="flex-grow container mx-auto px-6 py-20 text-center">
+    <h2 class="text-4xl md:text-5xl font-extrabold mb-4">Exchange Caesar Cipher Keys Securely</h2>
+    <p class="text-gray-300 max-w-2xl mx-auto mb-8 text-lg">
+      Welcome to a secure, modern Key Distribution Center powered by RSA encryption.
+      Create an account, generate and exchange session keys safely, and protect your data from prying eyes.
+    </p>
+    <div class="space-x-4">
+      <a href="/register" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded shadow transition">
+        Get Started
+      </a>
+      <a href="/login" class="bg-gray-700 hover:bg-gray-600 text-white px-6 py-3 rounded shadow transition">
+        Login
+      </a>
+    </div>
+  </main>
+
+  <!-- Features Section -->
+  <section class="bg-gray-800 py-12">
+    <div class="container mx-auto px-6 grid md:grid-cols-3 gap-8 text-center">
+      <div>
+        <h3 class="text-xl font-semibold mb-2">🔑 RSA-Based KDC</h3>
+        <p class="text-gray-400">Public key infrastructure secures every session and key exchange request.</p>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold mb-2">🛡️ Safe Key Sharing</h3>
+        <p class="text-gray-400">Caesar cipher key indices are shared securely via KDC-controlled channels.</p>
+      </div>
+      <div>
+        <h3 class="text-xl font-semibold mb-2">👥 User Auth & Logs</h3>
+        <p class="text-gray-400">Track logins, manage users, and ensure secure communications between verified identities.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="bg-gray-900 py-4 text-center text-sm text-gray-500">
+    © KDC Secure Exchange. Built with Flask, RSA, and ❤️.
+  </footer>
+
+</body>
+</html>
