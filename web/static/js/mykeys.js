@@ -18,7 +18,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         keys.forEach(({ username, encrypted_key }) => {
-            // Decrypt the Caesar key using the custom RSA decryption function
+            // Unlocks the Caesar cipher key with our custom RSA decryption
             const decryptedKey = decryptRSA(encrypted_key);
 
             const item = document.createElement("div");
@@ -36,7 +36,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 });
 
-// Decrypt the encrypted Caesar key using RSA (Custom implementation)
+// Decrypts the Caesar cipher key using our custom RSA implementation
 function decryptRSA(encryptedKey) {
     const privateKey = JSON.parse(localStorage.getItem("private_key"));
 
@@ -49,15 +49,15 @@ function decryptRSA(encryptedKey) {
     const d = BigInt(privateKey.d);
     const n = BigInt(privateKey.n);
 
-    // Decrypt the encrypted key (which is stored as a comma-separated string of numbers)
+    // Decrypt the encrypted key 
     const cipherArray = encryptedKey.split(",").map(num => BigInt(num));
     const decryptedKey = cipherArray.map(c => modPow(c, d, n)).map(c => String.fromCharCode(Number(c)));
 
-    // Join the decrypted characters and return the Caesar key
+    // join the decrypted characters and return the Caesar key
     return decryptedKey.join('');
 }
 
-// --- RSA Modulo Exponentiation (same as in settings.js) ---
+
 function modPow(base, exp, mod) {
     base %= mod;
     let result = 1n;

@@ -24,6 +24,7 @@ from flask import (
     current_app,
 )
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import or_, and_
 from flask_login import (
     UserMixin,
     login_user,
@@ -66,6 +67,7 @@ def load_user(user_id):
     return User.query.filter_by(user_id=user_id).first()
 
 
+# User model
 class User(db.Model, UserMixin):
     __tablename__ = 'users'
 
@@ -88,7 +90,8 @@ class User(db.Model, UserMixin):
     
     def get_id(self) -> str:
         return self.user_id 
-    
+
+# EncryptedKeys model
 class EncryptedKeys(db.Model):
     __tablename__ = 'encrypted_keys'
 
@@ -103,6 +106,17 @@ class EncryptedKeys(db.Model):
     def __str__(self) -> str:
         return f"{self.id} : {self.user1_id} - {self.user2_id}"
 
+# Message model
+class Message(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.String(150), db.ForeignKey("users.user_id"))
+    receiver_id = db.Column(db.String(150), db.ForeignKey("users.user_id"))
+    encrypted_message = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.now())
+
+    def __str__(self) -> str:
+        return f"{self.id} : {self.sender_id} - {self.receiver_id} : {self.encrypted_message}"
+
 
 @app.route('/')
 def index():
@@ -115,7 +129,7 @@ def dashboard():
     """
     Render the dashboard page.
     This function checks if the user is logged in and renders the 'dashboard.html' template.
-    If the user is not logged in, it redirects to the login page.
+    If the user is not logged in, it redirects to the login page (@login_required).
     """
     user = current_user
     return render_template('dashboard.html', user=user)
@@ -134,6 +148,15 @@ def settings():
 @app.route('/store_public_key', methods=['POST'])
 @login_required
 def store_public_key():
+    """
+    Stores the public key for the current user.
+    This function retrieves a public key from the JSON payload of the incoming
+    HTTP request, converts it to a JSON string, and assigns it to the `public_key`
+    attribute of the current user. The change is then committed to the database.
+    Returns:
+        Response: A JSON response with a success message and HTTP status code 200.
+    """
+
     data = request.json
     public_key = json.dumps(data.get('public_key'))  # Save as stringified JSON
     current_user.public_key = public_key
@@ -142,7 +165,27 @@ def store_public_key():
 
 
 @app.route('/request_key', methods=['POST'])
+@login_required
 def request_key():
+    """
+    Handles a request to generate and share an encrypted key between two users.
+    This function performs the following steps:
+    1. Validates the input JSON to ensure `user2_id` is provided.
+    2. Retrieves the current user (`user1`) and the requested user (`user2`) from the database.
+    3. Ensures both users exist and have public keys.
+    4. Prevents a user from requesting a key from themselves.
+    5. Generates a random Caesar cipher key and encrypts it using both users' public keys.
+    6. Updates or creates an entry in the `EncryptedKeys` table to store the encrypted keys.
+    7. Returns the encrypted key for `user1`.
+    Returns:
+        tuple: A JSON response and an HTTP status code.
+            - On success: A dictionary containing the encrypted key for `user1` and a 200 status code.
+            - On failure: An error message and the corresponding HTTP status code.
+    Raises:
+        KeyError: If `user2_id` is not provided in the request JSON.
+        ValueError: If either user does not exist or lacks a public key.
+    """
+
     data = request.json
 
     if not data.get('user2_id'):
@@ -153,6 +196,8 @@ def request_key():
 
     user1 = User.query.filter_by(user_id=user1_id).first()
     user2 = User.query.filter_by(user_id=user2_id).first()
+
+    # Check if both users exist and have public keys
     if not user1 or not user2:
         return None, "Users not found!"
     if not user1.public_key:
@@ -162,9 +207,13 @@ def request_key():
     if user1_id == user2_id:
         return jsonify({'error': 'You cannot request a key from yourself'}), 400
     
+    # Generate a random Caesar cipher key
+    # The key is a random integer between 1 and 26
     cesar_key = random.randint(1, 26)
     cesar_key_str = str(cesar_key)
 
+    # Encrypt the key using both users' public keys
+    # The public key is a JSON string like '{"e": "...", "n": "..."}'
     encrypted_key_1 = rsa.encrypt(cesar_key_str, user1.public_key)
     encrypted_key_2 = rsa.encrypt(cesar_key_str, user2.public_key)
 
@@ -196,29 +245,16 @@ def request_key():
 
     response = {
         'user1_encrypted_key': encrypted_key_1,
-        # 'cesar_plain': cesar_key_str   # delete this line in production
+        # 'cesar_plain': cesar_key_str   # delete this. added for testing
     }
 
     return response, 200
 
+# API route to get all users
 @app.route('/api/users')
 def get_users():
     users = User.query.filter(User.user_id != current_user.user_id).all()
     return jsonify({'users': [{'username': u.username, 'user_id': u.user_id} for u in users]}), 200
-
-@app.route('/api/generate_key', methods=['POST'])
-@login_required
-def generate_key():
-    rsa = RSA()
-    public_key, private_key = rsa.generate_key_pair()
-    user = current_user
-    user.public_key = str(public_key)
-    db.session.commit()
-    return jsonify({
-        'message': 'Key generated and public key stored',
-        'public_key': str(public_key),
-        'private_key': str(private_key)
-    }), 200
 
 @app.route('/mykeys', methods=['GET', 'POST'])
 @login_required
@@ -234,22 +270,38 @@ def mykeys():
 
     if request.method == 'POST':
 
+        # Get all keys for the current user
+        # user1 is always the request sender
         mykeys = EncryptedKeys.query.filter_by(user1_id=current_user.user_id).all() + EncryptedKeys.query.filter_by(user2_id=current_user.user_id).all()
         keys = []
         for key in mykeys:
             if key.user1_id == current_user.user_id:
                 keys.append({
+                    'user_id': key.user2_id,
                     'username': User.query.filter_by(user_id=key.user2_id).first().username,
                     'encrypted_key': key.encrypted_key_1
                 })
             else:
                 keys.append({
+                    'user_id': key.user1_id,
                     'username': User.query.filter_by(user_id=key.user1_id).first().username,
                     'encrypted_key': key.encrypted_key_2
                 })
 
         return jsonify({'keys': keys}), 200
     
+
+# Route for a simple chat page
+@app.route('/chat')
+@login_required
+def chat():
+    """
+    Render the chat page.
+    This function checks if the user is logged in and renders the 'chat.html' template.
+    If the user is not logged in, it redirects to the login page.
+    """
+    user = current_user
+    return render_template('chat/chat.html', user=user)
 
 # Authentication routes
 @app.route('/register', methods=['GET', 'POST'])
@@ -364,6 +416,73 @@ def logout():
     return redirect(url_for('login'))
 
 
+@app.route("/send_message", methods=["POST"])
+@login_required
+def send_message():
+    """
+    Handles the sending of an encrypted message from the current user to a specified receiver.
+    This function retrieves the JSON payload from the request, extracts the receiver ID and 
+    encrypted message, validates the input, and stores the message in the database.
+    Returns:
+        Response: A JSON response indicating success or failure of the operation.
+                  - On success: {"message": "Message sent successfully!"}, status code 200.
+                  - On failure: {"error": "Invalid request"}, status code 400.
+    Raises:
+        KeyError: If the JSON payload is missing required keys.
+        Exception: If there is an issue committing the message to the database.
+    Notes:
+        - The `current_user` object is expected to provide the ID of the currently authenticated user.
+        - The `Message` model is used to represent the message entity in the database.
+        - The `db.session` is used to interact with the database.
+    Example:
+        Input JSON payload:
+        {
+            "receiver_id": 123,
+            "encrypted_message": "Encrypted text here"
+        }
+    """
+
+    data = request.get_json()
+    receiver_id = data.get("receiver_id")
+    encrypted_message = data.get("encrypted_message")
+
+    if not receiver_id or not encrypted_message:
+        return jsonify({"error": "Invalid request"}), 400
+
+    message = Message(
+        sender_id=current_user.user_id,
+        receiver_id=receiver_id,
+        encrypted_message=encrypted_message,
+        timestamp=datetime.datetime.now()
+    )
+    db.session.add(message)
+    db.session.commit()
+    return jsonify({"message": "Message sent successfully!"})
+
+
+@app.route("/get_messages/<uuid:user_id>", methods=["GET"])
+@login_required
+def get_messages(user_id):
+
+    if not user_id:
+        return jsonify({"error": "Invalid request"}), 400
+    
+    # Get all messages between the current user and the specified user
+    messages = Message.query.filter(
+        or_(
+            and_(Message.sender_id == current_user.user_id, Message.receiver_id == str(user_id)),
+            and_(Message.receiver_id == current_user.user_id, Message.sender_id == str(user_id))
+        )
+    ).order_by(Message.timestamp.asc()).all()
+
+    return jsonify([
+        {
+            "sender_id": str(m.sender_id),
+            "receiver_id": str(m.receiver_id),
+            "encrypted_message": m.encrypted_message,
+            "timestamp": m.timestamp.isoformat()
+        } for m in messages
+    ])
 
 
 if __name__ == '__main__':

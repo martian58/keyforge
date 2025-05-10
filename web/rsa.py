@@ -1,5 +1,3 @@
-# rsa_util.py
-
 import random
 import json
 from math import gcd
@@ -19,7 +17,7 @@ class RSA:
         return ((e, n), (d, n))
 
     def encrypt(self, plaintext: str, public_key: str) -> str:
-        key_data = json.loads(public_key)  # if public_key is a JSON string like '{"e": "...", "n": "..."}'
+        key_data = json.loads(public_key)  # public_key is a JSON string like '{"e": "...", "n": "..."}'
         e = int(key_data["e"])
         n = int(key_data["n"])
         cipher = [pow(ord(char), e, n) for char in plaintext]
@@ -27,7 +25,7 @@ class RSA:
 
 
     def decrypt(self, ciphertext: str, private_key: str) -> str:
-        key_data = json.loads(private_key)  # if public_key is a JSON string like '{"e": "...", "n": "..."}'
+        key_data = json.loads(private_key)  # public_key is a JSON string like '{"e": "...", "n": "..."}'
         d = int(key_data["d"])
         n = int(key_data["n"])
         numbers = list(map(int, ciphertext.split(',')))
