@@ -3,7 +3,7 @@
 - [Authors](#authors)
 - [Overview](#overview)
 - [Features](#features)
-- [How to Use](#how-to-run)
+- [How to Use](#how-to-use)
 - [System Architecture](#system-architecture)
 - [Endpoints](#endpoints)
 - [Security Model](#security-model)
@@ -40,7 +40,7 @@ Each message is **encrypted** on the client side using Caesar cipher with a shar
 - 🔑 RSA key generation and Caesar key exchange using secure KDC.
 - 🔐 Caesar cipher-encrypted messages with real-time updates.
 - 🧾 Full chat history with sender and receiver identification.
-- 🕵️ Secure private key storage (via browser `localStorage`).
+- 🕵️ Secure private key storage (via browser's `localStorage`).
 - 🌙 Dark mode using Tailwind CSS.
 
 ---
@@ -57,7 +57,7 @@ Each message is **encrypted** on the client side using Caesar cipher with a shar
 
 5. **Check Messages**: Your chat history loads automatically, with messages decrypted on your end.
 
-6. **Switch Themes**: In `/settings`, toggle between dark and light modes for a comfy UI.
+6. **Switch Themes**: In `/settings`, toggle between dark and light modes for a comfort.
 
 If you are on a new device, restore your private key in Settings to decrypt your chats
 
