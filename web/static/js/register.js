@@ -17,7 +17,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const email = emailInput.value.trim();
         const password = passwordInput.value;
         const passwordConfirm = confirmInput.value;
-
+       // Checks if each fields are fullfilled
         if (!username || !email || !password || !passwordConfirm) {
             return showAlert("All fields are required.", "error");
         }
@@ -37,11 +37,11 @@ document.addEventListener("DOMContentLoaded", () => {
             });
 
             const result = await response.json();
-
+         // Checking for registiration
             if (!response.ok) {
                 return showAlert(result.error || "Registration failed.", "error");
             }
-
+           
             showAlert(result.message || "Registration successful!", "success");
             usernameInput.value = "";
             emailInput.value = "";

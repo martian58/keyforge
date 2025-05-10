@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/output.css') }}">
+</head>
+<body class="bg-gray-900 text-white min-h-screen flex flex-col">
+
+    <!-- Navbar -->
+    <nav class="bg-gray-800 shadow-md p-4">
+        <div class="max-w-7xl mx-auto flex justify-between items-center">
+            <div class="text-xl font-bold text-white">🔐 KDC Dashboard</div>
+            <div class="flex items-center space-x-4">
+                <span class="text-gray-300">👤 {{ user.username }}</span>
+                <a href="/logout" class="bg-red-600 hover:bg-red-500 px-3 py-1 rounded text-white">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Page Content -->
+    <div class="flex flex-1 overflow-hidden">
+        <aside class="w-64 bg-gray-800 p-4 space-y-3 flex-shrink-0 border-r border-gray-700">
+            <a href="/dashboard" class="block px-4 py-2 rounded hover:bg-gray-700 transition">🏠 Dashboard</a>
+            <a href="/mykeys" class="block px-4 py-2 rounded hover:bg-gray-700 transition">🔑 My Keys</a>
+            <a href="/chat" class="block px-4 py-2 rounded bg-gray-700 text-blue-400 font-semibold">💬 Chat</a>
+            <a href="/settings" class="block px-4 py-2 rounded hover:bg-gray-700 transition">⚙️ Settings</a>
+            <a href="/logout" class="block p-2 rounded hover:bg-gray-700 text-red-400">🚪 Logout</a>
+        </aside>
+
+        <!-- Contact List -->
+        <aside class="w-64 bg-gray-800 p-4 border-r border-gray-700 overflow-y-auto">
+            <h2 class="text-lg font-semibold mb-3">Contacts</h2>
+            <div id="contactsList" class="space-y-2">
+            </div>
+        </aside>
+
+        <!-- Chat Window -->
+        <main class="flex-1 p-6 flex flex-col">
+            <h1 class="text-xl font-bold mb-4">Chat with <span id="chatWith" class="text-blue-400">-</span></h1>
+
+            <div id="chatBox" class="flex-1 bg-gray-800 p-4 rounded overflow-y-auto mb-4 shadow-inner space-y-2">
+            </div>
+
+            <div class="flex items-center gap-2">
+                <textarea id="messageInput" rows="2" class="flex-1 p-2 rounded bg-gray-700 text-white resize-none"
+                    placeholder="Type a message..."></textarea>
+                <button onclick="sendMessage()"
+                    class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded shadow">Send
+                </button>
+            </div>
+        </main>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/chat/chat.js') }}"></script>
+</body>
+</html>
