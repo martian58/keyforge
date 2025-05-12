@@ -42,36 +42,50 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 function openChat(userId, username) {
-    console.log("Opening chat with:", userId, username);
     currentContact = { userId, username };
     document.getElementById("chatWith").innerText = username;
 
     // Clear previous interval if exists
     if (refreshInterval) clearInterval(refreshInterval);
 
-    // Fetch messages every second
+    // Fetch messages immediately and then every second
     loadMessages();
-
     refreshInterval = setInterval(loadMessages, 1000);
 
     function loadMessages() {
         fetch(`/get_messages/${userId}`)
             .then(res => res.json())
             .then(messages => {
-                console.log("Fetched messages:", messages);
                 const chatBox = document.getElementById("chatBox");
                 chatBox.innerHTML = "";
 
                 const myKey = contactCaesarKeys[userId];
+
                 messages.forEach(msg => {
-                    console.log(`Message from ${msg.sender_id}: ${msg.encrypted_message}`);
-                    const sender = msg.sender_id === currentContact.userId ? username : "You";
+                    const isSender = msg.sender_id === currentContact.userId;
+                    const senderName = isSender ? username : "You";
                     const decryptedText = caesarDecrypt(msg.encrypted_message, myKey);
 
-                    const div = document.createElement("div");
-                    div.className = sender === "You" ? "text-right mb-2" : "text-left mb-2";
-                    div.innerHTML = `<span class="inline-block px-3 py-2 rounded bg-gray-600">${sender}: ${decryptedText}</span>`;
-                    chatBox.appendChild(div);
+                    // Format timestamp
+                    const time = new Date(msg.timestamp);
+                    const formattedTime = time.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+                    // Create message element
+                    const messageDiv = document.createElement("div");
+                    messageDiv.className = isSender ? "text-left mb-2" : "text-right mb-2";
+
+                    const bubble = document.createElement("div");
+                    bubble.className = isSender
+                        ? "inline-block bg-gray-700 text-white px-4 py-2 rounded-lg max-w-xs"
+                        : "inline-block bg-blue-600 text-white px-4 py-2 rounded-lg max-w-xs";
+
+                    bubble.innerHTML = `
+                        <div class="text-lg">${decryptedText}</div>
+                        <div class="text-sm text-gray-300 mt-1">${senderName} • ${formattedTime}</div>
+                    `;
+
+                    messageDiv.appendChild(bubble);
+                    chatBox.appendChild(messageDiv);
                 });
 
                 chatBox.scrollTop = chatBox.scrollHeight;
@@ -81,6 +95,7 @@ function openChat(userId, username) {
             });
     }
 }
+
 
 function sendMessage() {
     const input = document.getElementById("messageInput");
@@ -122,3 +137,15 @@ function modPow(base, exp, mod) {
     }
     return result;
 }
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const messageInput = document.getElementById('messageInput');
+
+    messageInput.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault(); 
+            sendMessage(); // Send the message
+        }
+    });
+});
