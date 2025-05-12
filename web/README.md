@@ -10,12 +10,10 @@
 - [Code Structure & Key Files](#code-structure--key-files)
 - [Future Work](#future-work)
 
+## 🔐 Secure Chat System with Key Distribution Center (KDC)
+
+A secure, two-way chat application built using **Flask**, **JavaScript**, **Rust**, and **Tailwind CSS**, featuring end-to-end encrypted communication. The system utilizes a **Key Distribution Center (KDC)** for secure RSA-based key exchange and session establishment. All messages between users are encrypted using a **custom Caesar cipher** initialized with securely exchanged session keys. 
 ---
-
-# 🔐 Secure chat system with a Key Distribution Center (KDC)
-
-A secure web chat platform built using **Flask**, **JavaScript**, **SQLAlchemy**, and **Tailwind CSS** with a two-way communications system between users encrypted through a Caesar cipher-based method and RSA-encrypted key exchange via a KDC.
-
 
 ## 👨‍💻 Authors
 
