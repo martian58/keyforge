@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Login</title>
-    <script defer src="{{ url_for('static', filename='js/login.js') }}"></script>
     <link rel="stylesheet" href="../../static/css/output.css">
 </head>
 <body class="bg-gray-900 text-white h-screen flex items-center justify-center">
@@ -25,8 +24,12 @@
                     class="w-full bg-blue-600 hover:bg-blue-700 p-3 rounded text-white font-semibold transition">
                 Login
             </button>
+            <p class="text-center text-sm mt-4">
+                Don’t have an account?
+                <a href="{{ url_for('register') }}" class="text-blue-400 hover:text-blue-300 underline">Register here</a>
+            </p>
         </div>
     </div>
-    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
+    <script defer src="{{ url_for('static', filename='js/login.js') }}"></script>
 </body>
 </html>
