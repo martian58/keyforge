@@ -37,7 +37,6 @@ function requestKey(user2_id) {
     })
     .then(res => res.json())
     .then(data => {
-        // localStorage.setItem(`shared_key_with_${user2_id}`, data.user1_encrypted_key);
         alert("Encrypted Caesar key received and stored.");
     });
 }
