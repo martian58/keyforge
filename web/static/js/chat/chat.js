@@ -52,6 +52,7 @@ function openChat(userId, username) {
     loadMessages();
     refreshInterval = setInterval(loadMessages, 1000);
 
+    // Fetch and display messages
     function loadMessages() {
         fetch(`/get_messages/${userId}`)
             .then(res => res.json())
