@@ -115,6 +115,10 @@ cd src-tauri
 cargo tauri build
 ./target/release/keyforge
 ```
+Or
+```bash
+cargo tauri run
+```
 
 ## 🗄️ Setup Database
 
